@@ -1,157 +1,218 @@
-<p>tracker works!</p>
-<div class="min-h-screen bg-gray-950 text-white p-4 font-mono">
+<div class="tracker-wrapper">
 
   <!-- ===== HEADER ===== -->
-  <div class="max-w-full mx-auto">
-
-    <div class="flex items-center justify-between mb-6">
+  <div class="tracker-header">
+    <div class="header-top">
 
       <!-- Title -->
       <div>
-        <h1 class="text-2xl font-bold text-white">
-          📋 Daily Routine Tracker
-        </h1>
-        <p class="text-gray-500 text-xs tracking-widest mt-1">
-          MONITOR YOUR DAILY HABITS
-        </p>
+        <div class="app-title">📋 DAILY ROUTINE TRACKER</div>
+        <div class="app-subtitle">
+          {{ monthNames[currentMonth] }} {{ currentYear }}
+          — {{ tasks.length }} TASKS
+        </div>
       </div>
 
-      <!-- Month Navigation -->
-      <div class="flex items-center gap-3">
-        <button (click)="prevMonth()"
-                class="bg-gray-800 hover:bg-gray-700 border border-gray-600
-                       text-white px-3 py-2 rounded-lg transition-all text-sm">
-          ← PREV
-        </button>
+      <!-- Controls -->
+      <div class="controls">
+        <button class="btn btn-nav" (click)="prevMonth()">← PREV</button>
 
-        <div class="text-center min-w-[160px]">
-          <p class="text-[#1bbcd8] font-bold text-lg tracking-widest">
-            {{ monthNames[currentMonth] }}
-          </p>
-          <p class="text-gray-400 text-xs">{{ currentYear }}</p>
+        <div class="month-display">
+          <div class="month-name">{{ monthNames[currentMonth].toUpperCase() }}</div>
+          <div class="year-name">{{ currentYear }}</div>
         </div>
 
-        <button (click)="nextMonth()"
-                class="bg-gray-800 hover:bg-gray-700 border border-gray-600
-                       text-white px-3 py-2 rounded-lg transition-all text-sm">
-          NEXT →
-        </button>
-
-        <button (click)="goToToday()"
-                class="bg-[#1bbcd8] hover:bg-[#17a8c2] text-gray-950
-                       font-bold px-4 py-2 rounded-lg transition-all text-sm">
-          TODAY
+        <button class="btn btn-nav"   (click)="nextMonth()">NEXT →</button>
+        <button class="btn btn-today" (click)="goToToday()">TODAY</button>
+        <button class="btn btn-add"   (click)="showAddForm = !showAddForm">
+          {{ showAddForm ? '✕ CANCEL' : '+ ADD TASK' }}
         </button>
       </div>
 
     </div>
 
-    <!-- ===== SCROLLABLE TABLE WRAPPER ===== -->
-    <div class="overflow-x-auto rounded-xl border border-gray-700">
-      <table class="border-collapse min-w-full">
+    <!-- ADD TASK FORM -->
+    @if (showAddForm) {
+      <div class="add-form">
 
-        <!-- TABLE HEADER — dates -->
-        <thead>
+        <!-- Icon picker -->
+        <div class="icon-picker">
+          @for (icon of iconOptions; track icon) {
+            <button
+              [class]="'icon-btn' + (newTaskIcon === icon ? ' selected' : '')"
+              (click)="newTaskIcon = icon">
+              {{ icon }}
+            </button>
+          }
+        </div>
 
-          <!-- Row 1 — Date numbers -->
-          <tr class="bg-gray-900">
-            <!-- Task label column -->
-            <th class="sticky left-0 z-20 bg-gray-900 border border-gray-700
-                       px-4 py-3 text-left text-xs text-gray-400
-                       tracking-widest min-w-[160px]">
-              TASK
-            </th>
+        <!-- Name input -->
+        <input
+          class="task-input"
+          [(ngModel)]="newTaskLabel"
+          (keydown)="onEnter($event)"
+          placeholder="Task name — press Enter to add..." />
 
-            <!-- Date columns -->
-            @for (date of dates; track date) {
-              <th [class]="'border border-gray-700 px-2 py-2 text-center ' +
-                           'min-w-[50px] text-xs ' +
-                           (isToday(date)   ? 'bg-[#1bbcd8]/20 text-[#1bbcd8]' :
-                            isWeekend(date) ? 'bg-gray-800 text-gray-500'      :
-                                              'bg-gray-900 text-gray-300')">
-                <div class="font-bold">{{ date.getDate() }}</div>
-                <div class="text-[10px] opacity-70">{{ getDayName(date) }}</div>
-              </th>
-            }
-          </tr>
+        <!-- Preview -->
+        @if (newTaskLabel) {
+          <span class="preview-text">
+            {{ newTaskIcon }} {{ newTaskLabel }}
+          </span>
+        }
 
-        </thead>
+        <button class="btn btn-today" (click)="addTask()">ADD →</button>
 
-        <!-- TABLE BODY — tasks -->
-        <tbody>
+      </div>
+    }
+  </div>
 
-          @for (task of tasks; track task.id) {
-            <tr class="hover:bg-gray-800/30 transition-colors">
+  <!-- ===== TABLE ===== -->
+  <div class="table-wrapper">
+    <table class="tracker-table">
 
-              <!-- Task label — sticky left -->
-              <td class="sticky left-0 z-10 bg-gray-900 border border-gray-700
-                         px-4 py-3 text-sm font-medium whitespace-nowrap">
-                <span class="mr-2">{{ task.icon }}</span>
-                {{ task.label }}
-              </td>
+      <!-- HEADER -->
+      <thead>
+        <tr>
+          <th class="th-drag"></th>
+          <th class="th-task">TASK</th>
 
-              <!-- Checkbox cells -->
-              @for (date of dates; track date) {
-                <td [class]="'border border-gray-700 text-center px-1 py-2 ' +
-                             (isToday(date)   ? 'bg-[#1bbcd8]/10' :
-                              isWeekend(date) ? 'bg-gray-800/40'  : '')">
-                  <button
-                    (click)="toggle(date, task.id)"
-                    [class]="'w-8 h-8 rounded-lg text-base transition-all ' +
-                             'duration-200 hover:scale-110 ' +
-                             (getStatus(date, task.id)
-                               ? 'bg-green-500/20 border border-green-500/50'
-                               : 'bg-gray-700/50 border border-gray-600/50')">
-                    {{ getStatus(date, task.id) ? '✅' : '⬜' }}
-                  </button>
-                </td>
+          @for (date of dates; track date) {
+            <th [class]="'th-date' +
+              (isToday(date)    ? ' is-today'    :
+               isSunday(date)   ? ' is-sunday'   :
+               isSaturday(date) ? ' is-saturday' :
+                                  ' is-weekday')">
+
+              <div [class]="'date-num' +
+                (isToday(date)    ? ' today-num'    :
+                 isSunday(date)   ? ' sunday-num'   :
+                 isSaturday(date) ? ' saturday-num' :
+                                    ' weekday-num')">
+                {{ date.getDate() }}
+              </div>
+
+              <div [class]="'date-day' +
+                (isToday(date)    ? ' today-day'    :
+                 isSunday(date)   ? ' sunday-day'   :
+                 isSaturday(date) ? ' saturday-day' :
+                                    ' weekday-day')">
+                {{ getDayLabel(date) }}
+              </div>
+
+              @if (isToday(date)) {
+                <div class="today-dot"></div>
               }
 
-            </tr>
+            </th>
           }
+        </tr>
+      </thead>
 
-          <!-- PROGRESS ROW — shows % complete per day -->
-          <tr class="bg-gray-900/80">
-            <td class="sticky left-0 z-10 bg-gray-900 border border-gray-700
-                       px-4 py-2 text-xs text-gray-400 tracking-widest">
-              📊 PROGRESS
+      <!-- BODY -->
+      <tbody cdkDropList (cdkDropListDropped)="onDrop($event)">
+
+        @for (task of tasks; track task.id) {
+          <tr class="task-row" cdkDrag>
+
+            <!-- Drag handle -->
+            <td class="td-drag">
+              <div class="drag-handle" cdkDragHandle>
+                <svg width="10" height="14" viewBox="0 0 10 14"
+                     fill="currentColor">
+                  <circle cx="3" cy="2"  r="1.4"/>
+                  <circle cx="7" cy="2"  r="1.4"/>
+                  <circle cx="3" cy="7"  r="1.4"/>
+                  <circle cx="7" cy="7"  r="1.4"/>
+                  <circle cx="3" cy="12" r="1.4"/>
+                  <circle cx="7" cy="12" r="1.4"/>
+                </svg>
+              </div>
             </td>
 
+            <!-- Task label -->
+            <td class="td-task">
+              <div class="task-inner">
+                <span class="task-label">
+                  <span class="task-icon">{{ task.icon }}</span>
+                  {{ task.label }}
+                </span>
+                <button class="delete-btn"
+                        (click)="deleteTask(task.id)">✕</button>
+              </div>
+            </td>
+
+            <!-- Checkbox cells -->
             @for (date of dates; track date) {
-              <td [class]="'border border-gray-700 text-center py-2 ' +
-                           (isToday(date) ? 'bg-[#1bbcd8]/10' : '')">
-                <div class="flex flex-col items-center gap-1">
-                  <!-- progress bar -->
-                  <div class="w-6 bg-gray-700 rounded-full h-1.5">
-                    <div
-                      class="h-1.5 rounded-full transition-all duration-300"
-                      [class]="getProgress(date) === 100 ? 'bg-green-400' :
-                               getProgress(date) >= 50  ? 'bg-yellow-400' :
-                                                          'bg-red-400'"
-                      [style.width]="getProgress(date) + '%'">
-                    </div>
-                  </div>
-                  <!-- percentage -->
-                  <span class="text-[9px] text-gray-500">
-                    {{ getProgress(date) }}%
-                  </span>
-                </div>
+              <td [class]="'td-cell' +
+                (isToday(date)    ? ' cell-today'    :
+                 isSunday(date)   ? ' cell-sunday'   :
+                 isSaturday(date) ? ' cell-saturday' : '')">
+
+                <button
+                  (click)="toggle(date, task.id)"
+                  [class]="'check-btn ' +
+                    (getStatus(date, task.id) ? 'done' : 'undone')">
+                  {{ getStatus(date, task.id) ? '✅' : '⬜' }}
+                </button>
+
               </td>
             }
 
           </tr>
+        }
 
-        </tbody>
-      </table>
-    </div>
+        <!-- Empty state -->
+        @if (tasks.length === 0) {
+          <tr>
+            <td colspan="2" style="padding:40px;text-align:center;
+                                   color:#374151;letter-spacing:2px;
+                                   font-size:12px;position:sticky;left:0;">
+              NO TASKS — CLICK "+ ADD TASK" TO BEGIN
+            </td>
+          </tr>
+        }
 
-    <!-- ===== LEGEND ===== -->
-    <div class="flex items-center gap-6 mt-4 text-xs text-gray-500">
-      <span>✅ Done</span>
-      <span>⬜ Not Done</span>
-      <span class="text-[#1bbcd8]">■ Today</span>
-      <span class="text-gray-600">■ Weekend</span>
-    </div>
+      </tbody>
 
+      <!-- PROGRESS ROW -->
+      <tfoot>
+        <tr class="tfoot-row">
+          <td class="td-prog-drag"></td>
+          <td class="td-prog-label">📊 PROGRESS</td>
+
+          @for (date of dates; track date) {
+            <td [class]="'td-prog-cell' +
+              (isToday(date) ? ' prog-today' : '')">
+
+              <div class="prog-bar-wrap">
+                <div
+                  [class]="'prog-bar-fill ' + getProgressColor(getProgress(date))"
+                  [style.height]="getProgress(date) + '%'">
+                </div>
+              </div>
+
+              <div [class]="'prog-pct ' +
+                (getProgress(date) === 100 ? 'pct-done' : '')">
+                {{ getProgress(date) }}%
+              </div>
+
+            </td>
+          }
+
+        </tr>
+      </tfoot>
+
+    </table>
   </div>
+
+  <!-- ===== LEGEND ===== -->
+  <div class="legend">
+    <span>✅ DONE</span>
+    <span>⬜ NOT DONE</span>
+    <span style="color:#1bbcd8">● TODAY</span>
+    <span style="color:#f87171">■ SUNDAY</span>
+    <span style="color:#60a5fa">■ SATURDAY</span>
+    <span style="color:#4b5563">⠿ DRAG TO REORDER</span>
+  </div>
+
 </div>

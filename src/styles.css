@@ -1,3 +1,38 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #030712;
+  color: #f9fafb;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #111827; }
+::-webkit-scrollbar-thumb { background: #1bbcd8; border-radius: 10px; }
+
+/* ===== DRAG AND DROP ===== */
+.cdk-drag-preview {
+  background: #1f2937 !important;
+  border: 1px solid #1bbcd8 !important;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(27,188,216,0.3);
+  display: table;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  background: rgba(27,188,216,0.05);
+  border: 1px dashed rgba(27,188,216,0.4);
+}
+
+.cdk-drop-list-dragging tr:not(.cdk-drag-placeholder) {
+  transition: transform 200ms ease;
+}

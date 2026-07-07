@@ -1,58 +1,78 @@
-import { Component, OnInit } from '@angular/core';
-import { NgFor, NgClass, DatePipe } from '@angular/common';
-import { TrackerService, Task } from '../../services/tracker.service';
+import { Component, OnInit }                from '@angular/core';
+import { NgClass }                          from '@angular/common';
+import { FormsModule }                      from '@angular/forms';
+import { CdkDragDrop, DragDropModule,
+         moveItemInArray }                  from '@angular/cdk/drag-drop';
+import { TrackerService, Task }             from '../../services/tracker.service';
 
 @Component({
-  selector: 'app-tracker',
-  standalone: true,
-  imports: [NgFor, NgClass, DatePipe],
+  selector:    'app-tracker',
+  standalone:  true,
+  imports:     [NgClass, FormsModule, DragDropModule],
   templateUrl: './tracker.html',
-  styleUrls: ['./tracker.css']
+  styleUrls:   ['./tracker.css']
 })
 export class TrackerComponent implements OnInit {
 
-  // current year and month being viewed
+  // ===== STATE =====
   currentYear  = new Date().getFullYear();
-  currentMonth = new Date().getMonth(); // 0 = Jan, 11 = Dec
+  currentMonth = new Date().getMonth();
+  dates:  Date[] = [];
+  tasks:  Task[] = [];
 
-  // all dates in the current month
-  dates: Date[] = [];
+  // add task form
+  newTaskLabel = '';
+  newTaskIcon  = '📌';
+  showAddForm  = false;
 
-  // your tasks from service
-  tasks: Task[] = [];
-
-  // month names for header display
-  monthNames = [
-    'January', 'February', 'March',     'April',
-    'May',     'June',     'July',      'August',
-    'September','October', 'November',  'December'
+  // available icons to pick from
+  iconOptions = [
+    '⏰','🏃','💼','🍱','📚','😴','💧','🧘',
+    '📝','🎯','💊','🛒','📞','🎵','🏋️','🍎'
   ];
 
-  // day labels for each date column
-  dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  monthNames = [
+    'January','February','March','April',
+    'May','June','July','August',
+    'September','October','November','December'
+  ];
+
+  dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
   constructor(public trackerService: TrackerService) {}
 
   ngOnInit() {
-    this.tasks = this.trackerService.tasks;
+    this.tasks = this.trackerService.getTasks();
+    this.generateDates();
+    this.autoCheckMonth();
+  }
+
+  // ===== AUTO MONTH CHECK =====
+  // automatically shows current month on load
+  autoCheckMonth() {
+    const now = new Date();
+    this.currentYear  = now.getFullYear();
+    this.currentMonth = now.getMonth();
     this.generateDates();
   }
 
-  // generates all dates for the current month
+  // ===== DATE GENERATION =====
   generateDates() {
     this.dates = [];
     const daysInMonth = new Date(
       this.currentYear,
       this.currentMonth + 1,
-      0                          // day 0 of next month = last day of this month
+      0
     ).getDate();
 
     for (let day = 1; day <= daysInMonth; day++) {
-      this.dates.push(new Date(this.currentYear, this.currentMonth, day));
+      this.dates.push(
+        new Date(this.currentYear, this.currentMonth, day)
+      );
     }
   }
 
-  // navigate to previous month
+  // ===== NAVIGATION =====
   prevMonth() {
     if (this.currentMonth === 0) {
       this.currentMonth = 11;
@@ -63,7 +83,6 @@ export class TrackerComponent implements OnInit {
     this.generateDates();
   }
 
-  // navigate to next month
   nextMonth() {
     if (this.currentMonth === 11) {
       this.currentMonth = 0;
@@ -74,44 +93,74 @@ export class TrackerComponent implements OnInit {
     this.generateDates();
   }
 
-  // go back to today's month
   goToToday() {
-    this.currentYear  = new Date().getFullYear();
-    this.currentMonth = new Date().getMonth();
-    this.generateDates();
+    this.autoCheckMonth();
   }
 
-  // check if a date is today
+  // ===== DATE HELPERS =====
   isToday(date: Date): boolean {
-    const today = new Date();
-    return date.getDate()     === today.getDate()  &&
-           date.getMonth()    === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
+    const t = new Date();
+    return date.getDate()     === t.getDate()  &&
+           date.getMonth()    === t.getMonth() &&
+           date.getFullYear() === t.getFullYear();
   }
 
-  // check if date is Sunday or Saturday
-  isWeekend(date: Date): boolean {
-    const day = date.getDay();
-    return day === 0 || day === 6;
+  isSunday(date: Date):   boolean { return date.getDay() === 0; }
+  isSaturday(date: Date): boolean { return date.getDay() === 6; }
+  isWeekend(date: Date):  boolean { return this.isSunday(date) || this.isSaturday(date); }
+
+  getDayLabel(date: Date): string {
+    return this.dayLabels[date.getDay()];
   }
 
-  // get day name for a date
-  getDayName(date: Date): string {
-    return this.dayNames[date.getDay()];
-  }
-
-  // toggle a cell
+  // ===== CHECKBOX =====
   toggle(date: Date, taskId: string) {
     this.trackerService.toggle(date, taskId);
   }
 
-  // get status of a cell
   getStatus(date: Date, taskId: string): boolean {
     return this.trackerService.getStatus(date, taskId);
   }
 
-  // get progress for a day
   getProgress(date: Date): number {
-    return this.trackerService.getDayProgress(date);
+    return this.trackerService.getDayProgress(date, this.tasks);
+  }
+
+  // ===== ADD TASK =====
+  addTask() {
+    const label = this.newTaskLabel.trim();
+    if (!label) return;
+
+    const newTask = this.trackerService.addTask(label, this.newTaskIcon);
+    this.tasks.push(newTask);
+
+    // reset form
+    this.newTaskLabel = '';
+    this.newTaskIcon  = '📌';
+    this.showAddForm  = false;
+  }
+
+  onEnter(event: KeyboardEvent) {
+    if (event.key === 'Enter') this.addTask();
+  }
+
+  // ===== DELETE TASK =====
+  deleteTask(taskId: string) {
+    this.trackerService.deleteTask(taskId);
+    this.tasks = this.tasks.filter(t => t.id !== taskId);
+  }
+
+  // ===== DRAG AND DROP =====
+  onDrop(event: CdkDragDrop<Task[]>) {
+    moveItemInArray(this.tasks, event.previousIndex, event.currentIndex);
+    this.trackerService.reorderTasks(this.tasks);
+  }
+
+  // ===== PROGRESS COLOR =====
+  getProgressColor(progress: number): string {
+    if (progress === 100) return 'bg-green-400';
+    if (progress >= 66)   return 'bg-blue-400';
+    if (progress >= 33)   return 'bg-yellow-400';
+    return 'bg-red-400';
   }
 }
