@@ -105,12 +105,52 @@ export class TrackerComponent implements OnInit {
            date.getFullYear() === t.getFullYear();
   }
 
+  isPast(date: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d < today;
+  }
+
+  isFuture(date: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d > today;
+  }
+
+  isDisabled(date: Date): boolean {
+    return this.isPast(date) || this.isFuture(date);
+  }
+
   isSunday(date: Date):   boolean { return date.getDay() === 0; }
   isSaturday(date: Date): boolean { return date.getDay() === 6; }
   isWeekend(date: Date):  boolean { return this.isSunday(date) || this.isSaturday(date); }
 
   getDayLabel(date: Date): string {
     return this.dayLabels[date.getDay()];
+  }
+
+  
+  // get display state for a cell
+  // returns: 'done-red' | 'done-green' | 'undone' | 'disabled-done' | 'disabled-undone'
+  getCellState(date: Date, taskId: string): string {
+    const status = this.trackerService.getStatus(date, taskId);
+
+    if (this.isDisabled(date)) {
+      // past or future — locked
+      return status ? 'disabled-done' : 'disabled-undone';
+    }
+
+    if (this.isToday(date)) {
+      if (!status) return 'undone';
+      // checked today — red if incomplete, green if all done
+      return  'done-green';
+    }
+
+    return 'undone';
   }
 
   // ===== CHECKBOX =====
@@ -126,6 +166,20 @@ export class TrackerComponent implements OnInit {
     return this.trackerService.getDayProgress(date, this.tasks);
   }
 
+  getProgressColor(progress: number): string {
+    if (progress >= 90) return 'prog-green';
+    if (progress >= 41) return 'prog-yellow';
+    return 'prog-red';
+  }
+  getCellEmoji(state: string): string {
+    switch(state) {
+      case 'done-green':     return '✅';
+      case 'done-red':       return '🔴';
+      case 'disabled-done':  return '✅';
+      case 'disabled-undone':return '⬜';
+      default:               return '⬜';
+    }
+  }
   // ===== ADD TASK =====
   addTask() {
     const label = this.newTaskLabel.trim();
@@ -156,11 +210,4 @@ export class TrackerComponent implements OnInit {
     this.trackerService.reorderTasks(this.tasks);
   }
 
-  // ===== PROGRESS COLOR =====
-  getProgressColor(progress: number): string {
-    if (progress === 100) return 'bg-green-400';
-    if (progress >= 66)   return 'bg-blue-400';
-    if (progress >= 33)   return 'bg-yellow-400';
-    return 'bg-red-400';
-  }
 }

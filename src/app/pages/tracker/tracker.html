@@ -79,9 +79,10 @@
           @for (date of dates; track date) {
             <th [class]="'th-date' +
               (isToday(date)    ? ' is-today'    :
-               isSunday(date)   ? ' is-sunday'   :
-               isSaturday(date) ? ' is-saturday' :
-                                  ' is-weekday')">
+     isDisabled(date) ? ' is-disabled' :
+     isSunday(date)   ? ' is-sunday'   :
+     isSaturday(date) ? ' is-saturday' :
+                        ' is-weekday')">
 
               <div [class]="'date-num' +
                 (isToday(date)    ? ' today-num'    :
@@ -145,14 +146,15 @@
             @for (date of dates; track date) {
               <td [class]="'td-cell' +
                 (isToday(date)    ? ' cell-today'    :
+                isDisabled(date) ? ' cell-disabled' :
                  isSunday(date)   ? ' cell-sunday'   :
                  isSaturday(date) ? ' cell-saturday' : '')">
 
                 <button
                   (click)="toggle(date, task.id)"
-                  [class]="'check-btn ' +
-                    (getStatus(date, task.id) ? 'done' : 'undone')">
-                  {{ getStatus(date, task.id) ? '✅' : '⬜' }}
+      [class]="'check-btn ' + getCellState(date, task.id)"
+      [title]="isDisabled(date) ? 'Only today is editable' : ''">
+      {{ getCellEmoji(getCellState(date, task.id)) }}
                 </button>
 
               </td>
@@ -191,11 +193,7 @@
                 </div>
               </div>
 
-              <div [class]="'prog-pct ' +
-                (getProgress(date) === 100 ? 'pct-done' : '')">
-                {{ getProgress(date) }}%
-              </div>
-
+            
             </td>
           }
 
