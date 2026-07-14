@@ -1,5 +1,5 @@
 import { Component, OnInit }                from '@angular/core';
-import { NgClass }                          from '@angular/common';
+import { ChartComponent } from '../chart/chart';
 import { FormsModule }                      from '@angular/forms';
 import { CdkDragDrop, DragDropModule,
          moveItemInArray }                  from '@angular/cdk/drag-drop';
@@ -8,7 +8,7 @@ import { TrackerService, Task }             from '../../services/tracker.service
 @Component({
   selector:    'app-tracker',
   standalone:  true,
-  imports:     [NgClass, FormsModule, DragDropModule],
+  imports:     [ FormsModule, DragDropModule,ChartComponent],
   templateUrl: './tracker.html',
   styleUrls:   ['./tracker.css']
 })
