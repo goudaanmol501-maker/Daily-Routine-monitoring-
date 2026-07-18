@@ -1,0 +1,230 @@
+<div style="background:#0a0f1a; border:1px solid #1f2937;
+            border-radius:16px; padding:16px; margin:16px 16px 0;">
+
+  <!-- TITLE ROW -->
+  <div style="display:flex; justify-content:space-between;
+              align-items:center; margin-bottom:14px;">
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#f9fafb;
+                  letter-spacing:3px; font-family:'Courier New';">
+        😴 SLEEP TRACKER
+      </div>
+      <div style="font-size:10px; color:#4b5563; letter-spacing:2px;
+                  font-family:'Courier New'; margin-top:2px;">
+        {{ todayLabel }}
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:22px; font-weight:700; color:#f9fafb;
+                  font-family:'Courier New';">
+        {{ avgSleep > 0 ? avgSleep + 'h' : '--' }}
+      </div>
+      <div style="font-size:9px; color:#4b5563; letter-spacing:2px;
+                  font-family:'Courier New';">
+        AVG THIS WEEK
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MOBILE: TOP ROW = 4 inputs + result ===== -->
+  <!-- ===== DESKTOP: LEFT column ===== -->
+  <div class="sleep-layout">
+
+    <!-- LEFT / TOP SECTION -->
+    <div class="sleep-inputs">
+
+      <!-- 4 widgets in 2x2 grid on mobile, stacked on desktop -->
+      <div class="sleep-widgets-grid">
+
+        <!-- WIDGET 1 — Mood -->
+        <div class="sleep-widget">
+          <div class="widget-label">😊 MOOD</div>
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            @for (m of moods; track m.value) {
+              <button
+                (click)="mood = m.value"
+                [style.background]="mood === m.value
+                  ? 'rgba(27,188,216,0.2)' : '#1f2937'"
+                [style.border]="mood === m.value
+                  ? '1px solid #1bbcd8' : '1px solid #374151'"
+                style="flex:1; min-width:36px; padding:5px 4px;
+                       border-radius:8px; cursor:pointer;
+                       transition:all 0.15s; display:flex;
+                       flex-direction:column; align-items:center; gap:1px;">
+                <span style="font-size:16px;">{{ m.emoji }}</span>
+                <span style="font-size:7px; font-family:'Courier New';
+                             color:#6b7280; letter-spacing:0.5px;">
+                  {{ m.label }}
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- WIDGET 2 — Slept At -->
+        <div class="sleep-widget">
+          <div class="widget-label">🌙 SLEPT AT</div>
+          <input
+            type="time"
+            [(ngModel)]="sleptTime"
+            (change)="onTimeChange()"
+            class="time-input" />
+        </div>
+
+        <!-- WIDGET 3 — Woke Up -->
+        <div class="sleep-widget">
+          <div class="widget-label">⏰ WOKE UP</div>
+          <input
+            type="time"
+            [(ngModel)]="wakeupTime"
+            (change)="onTimeChange()"
+            class="time-input" />
+        </div>
+
+        <!-- WIDGET 4 — Mins to Sleep -->
+        <div class="sleep-widget">
+          <div class="widget-label">💤 MINS TO SLEEP</div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button (click)="decreaseMins()" class="mins-btn">−</button>
+            <span style="flex:1; text-align:center; font-size:18px;
+                         font-weight:700; color:#f9fafb;
+                         font-family:'Courier New';">
+              {{ minsToSleep }}
+            </span>
+            <button (click)="increaseMins()" class="mins-btn">+</button>
+            <span style="font-size:9px; color:#6b7280;
+                         font-family:'Courier New';">MIN</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RESULT + SAVE -->
+      <div class="sleep-widget" style="text-align:center; margin-top:0;">
+        <div class="widget-label">ACTUAL SLEEP</div>
+        <div style="font-size:26px; font-weight:700;
+                    font-family:'Courier New';"
+             [style.color]="getSleepQualityColor(calculatedHours)">
+          {{ calculatedHours > 0 ? calculatedHours + 'h' : '--' }}
+        </div>
+        <div style="font-size:10px; font-weight:700; letter-spacing:1px;
+                    font-family:'Courier New'; margin-top:2px;"
+             [style.color]="getSleepQualityColor(calculatedHours)">
+          {{ getSleepQualityLabel(calculatedHours) }}
+        </div>
+
+        <button (click)="save()"
+                style="margin-top:8px; width:100%; padding:7px;
+                       border-radius:8px; border:none;
+                       background:#1bbcd8; color:#030712; cursor:pointer;
+                       font-family:'Courier New'; font-size:11px;
+                       font-weight:700; letter-spacing:1px;"
+                onmouseover="this.style.background='#17a8c2'"
+                onmouseout="this.style.background='#1bbcd8'">
+          {{ savedToday ? 'UPDATE ✓' : 'LOG TODAY →' }}
+        </button>
+
+        @if (savedToday) {
+          <div style="margin-top:5px; font-size:9px; color:#4ade80;
+                      letter-spacing:1px; font-family:'Courier New';">
+            ✅ {{ getMoodEmoji(mood) }} {{ calculatedHours }}h SAVED
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- RIGHT / BOTTOM — BAR GRAPH -->
+    <div class="sleep-graph">
+
+      <div style="display:flex; justify-content:space-between;
+                  align-items:center; margin-bottom:10px;">
+        <span style="font-size:10px; color:#4b5563; letter-spacing:2px;
+                     font-family:'Courier New';">LAST 7 DAYS</span>
+        <span style="font-size:10px; color:#1bbcd8; letter-spacing:1px;
+                     font-family:'Courier New';">GOAL: 8H</span>
+      </div>
+
+      <!-- Bars -->
+      <div style="display:flex; align-items:flex-end; gap:4px; height:160px;">
+
+        <!-- Y axis -->
+        <div style="display:flex; flex-direction:column;
+                    justify-content:space-between; height:140px;
+                    margin-right:4px;">
+          @for (lb of ['10h','8h','6h','4h','2h','0h']; track lb) {
+            <span style="font-size:8px; color:#374151;
+                         font-family:'Courier New'; line-height:1;">
+              {{ lb }}
+            </span>
+          }
+        </div>
+
+        <!-- Bar columns -->
+        <div style="flex:1; display:flex; align-items:flex-end; gap:5px;
+                    height:140px; border-left:1px solid #1f2937;
+                    border-bottom:1px solid #1f2937; padding:0 4px;">
+
+          @for (item of chartData; track item.label) {
+            <div style="flex:1; display:flex; flex-direction:column;
+                        align-items:center; justify-content:flex-end;
+                        height:100%; position:relative; gap:3px;">
+
+              <!-- Tooltip -->
+              <div style="position:absolute; top:-24px; left:50%;
+                          transform:translateX(-50%);
+                          background:#1f2937; color:#f9fafb;
+                          font-size:9px; font-family:'Courier New';
+                          padding:2px 5px; border-radius:4px;
+                          border:1px solid #374151; opacity:0;
+                          pointer-events:none; transition:opacity 0.2s;
+                          white-space:nowrap; z-index:10;">
+                {{ item.hours > 0 ? item.hours + 'h' : 'No data' }}
+              </div>
+
+              <!-- 8h goal line -->
+              <div style="position:absolute; bottom:80%; left:0; right:0;
+                          height:1px; background:#1bbcd8;
+                          opacity:0.25; pointer-events:none;">
+              </div>
+
+              <!-- Bar -->
+              <div
+                [style.height]="item.height"
+                [style.background]="item.color"
+                style="width:100%; max-width:32px; min-height:4px;
+                       border-radius:5px 5px 2px 2px; cursor:pointer;
+                       transition:height 0.5s cubic-bezier(0.34,1.56,0.64,1);"
+                (mouseenter)="showTooltip($event, item)"
+                (mouseleave)="hideTooltip($event)">
+              </div>
+
+              <!-- Day label -->
+              <div style="font-size:7px; color:#4b5563;
+                          font-family:'Courier New'; text-align:center;
+                          white-space:nowrap; overflow:hidden;
+                          width:100%; text-overflow:ellipsis;">
+                {{ item.label }}
+              </div>
+
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;
+                  font-size:8px; font-family:'Courier New';
+                  letter-spacing:1px; color:#374151;">
+        <span style="color:#2d3748;">■ NONE</span>
+        <span style="color:#f87171;">■ POOR</span>
+        <span style="color:#facc15;">■ AVG</span>
+        <span style="color:#4ade80;">■ GOOD</span>
+        <span style="color:#1bbcd8;">— 8H</span>
+      </div>
+
+    </div>
+
+  </div>
+</div>

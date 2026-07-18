@@ -4,11 +4,11 @@ import { FormsModule }                      from '@angular/forms';
 import { CdkDragDrop, DragDropModule,
          moveItemInArray }                  from '@angular/cdk/drag-drop';
 import { TrackerService, Task }             from '../../services/tracker.service';
-
+import { SleepChartComponent } from '../sleep-chart/sleep-chart';
 @Component({
   selector:    'app-tracker',
   standalone:  true,
-  imports:     [ FormsModule, DragDropModule,ChartComponent],
+  imports:     [ FormsModule, DragDropModule,ChartComponent, SleepChartComponent],
   templateUrl: './tracker.html',
   styleUrls:   ['./tracker.css']
 })
@@ -210,4 +210,5 @@ export class TrackerComponent implements OnInit {
     this.trackerService.reorderTasks(this.tasks);
   }
 
+  
 }
