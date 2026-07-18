@@ -82,4 +82,77 @@ export class TrackerService {
     const done = tasks.filter(t => this.getStatus(date, t.id)).length;
     return Math.round((done / tasks.length) * 100);
   }
+// ===== SLEEP TRACKING =====
+private sleepKey = 'routine_sleep';
+
+// save sleep hours for today
+
+saveSleep(date: Date, hours: number): void{
+  const key = this.buildSleepKey(date);
+  localStorage.setItem(key, String(hours));
+}
+
+getSleep(date: Date): number{
+  const key =this.buildSleepKey(date);
+  const val = localStorage.getItem(key);
+  return val ? parseFloat(val) : 0;
+}
+
+// build key for sleep tracking
+private buildSleepKey(date: Date): string{
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}_sleep`;
+}
+
+
+// get last 7 days sleep data
+getLast7DaysSleep(): { label: string; hours: number; date: Date }[] {
+  const result = [];
+  const today  = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    result.push({
+      date:  d,
+      label: d.toLocaleDateString('en-GB', {
+        weekday: 'short', day: '2-digit', month: 'numeric'
+      }),
+      hours: this.getSleep(d)
+    });
+  }
+  return result;
+}
+
+// ===== SLEEP DETAILS =====
+private sleepDetailKey = 'routine_sleep_detail';
+
+saveSleepDetail(date: Date, detail: {
+  mood:          string;
+  sleptTime:     string;
+  wakeupTime:    string;
+  minsToSleep:   number;
+  actualHours:   number;
+}): void {
+  const key = `sleep_detail_${this.buildDateKey(date)}`;
+  localStorage.setItem(key, JSON.stringify(detail));
+
+  // also save to regular sleep key for graph
+  this.saveSleep(date, detail.actualHours);
+}
+
+getSleepDetail(date: Date): any {
+  const key  = `sleep_detail_${this.buildDateKey(date)}`;
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : null;
+}
+
+private buildDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 }
